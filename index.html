@@ -71,8 +71,8 @@
   .card .label { color: var(--text-secondary); font-size: 12.5px; }
   .card .value { font-size: 27px; font-weight: 600; margin-top: 2px; }
   .card .note { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
-  .hero .value { font-size: 48px; line-height: 1.1; letter-spacing: 0.5px; }
-  .hero .value span { color: var(--text-muted); font-size: 20px; font-weight: 500; }
+  .hero .value { font-size: 32px; line-height: 1.15; letter-spacing: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .hero .value span { color: var(--text-muted); font-size: 14px; font-weight: 500; }
 
   .gcard .ghead { display: flex; align-items: center; gap: 8px; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
@@ -258,7 +258,7 @@ const GROUPS = ['Investors', 'Team', 'Advisors', 'Vendors', 'Ambassadors'];
 const COLORS = {
   Investors: 'var(--g-investors)', Team: 'var(--g-team)', Advisors: 'var(--g-advisors)',
   Vendors: 'var(--g-vendors)', Ambassadors: 'var(--g-ambassadors)',
-  'Foundation LT Treasury': 'var(--g-other)', 'Autonomys Labs Treasury': 'var(--g-other)',
+  'Foundation Long-Term Treasury': 'var(--g-other)', 'Autonomys Labs Treasury': 'var(--g-other)',
 };
 const R = window.REGISTRY;
 const LOCKUP = R.lockers.lockup.toLowerCase();
@@ -284,7 +284,7 @@ function toPlan(p, group, section) {
   };
 }
 const plans = [];          // group plans (the 5 groups)
-const treasuryPlans = [];  // Foundation LT + Autonomys Labs lockups
+const treasuryPlans = [];  // Foundation Long-Term + Autonomys Labs lockups
 const planByKey = new Map();
 for (const g of GROUPS) {
   for (const p of R.groups[g].plans) {
@@ -635,7 +635,7 @@ function renderFlow() {
     split.forEach((v, i) => a.split[i] += v);
     a.claimed += r.claimed;
   }
-  const groupsWithFlow = [...activeGroups(), 'Foundation LT Treasury', 'Autonomys Labs Treasury'].filter((g) => agg[g]);
+  const groupsWithFlow = [...activeGroups(), 'Foundation Long-Term Treasury', 'Autonomys Labs Treasury'].filter((g) => agg[g]);
   if (!groupsWithFlow.length) {
     el.innerHTML = '<div class="empty">Tracing claimant wallets&hellip;</div>';
     return;
@@ -816,11 +816,10 @@ document.getElementById('footnotes').innerHTML = `
   (<a href="${EXPLORER}/address/${R.lockers.lockup}" target="_blank" rel="noopener">TokenLockupPlans</a>,
   <a href="${EXPLORER}/address/${R.lockers.vesting}" target="_blank" rel="noopener">TokenVestingPlans</a>, token WAI3) and attributed by creating wallet
   per the <a href="https://forum.autonomys.xyz/t/subspace-foundation-autonomys-labs-wallets-official-addresses-for-transparency/4917" target="_blank" rel="noopener">official wallets post</a>.
-  Ambassador plans are those created outside the official admin set (creators: ${ambassadorCreators.map(short).join(', ')} - the first is the ambassador program Safe).
+  Ambassador plans are those created outside the official admin set by the ambassador program Safe (${ambassadorCreators.map(short).join(', ')}). Plans under 100 AI3 are excluded as test grants.
   Registry snapshot: ${R.generatedAt.slice(0, 16).replace('T', ' ')} UTC (re-run <span class="mono">node scripts/build-registry.mjs</span> to pick up newly created plans).
   Claims are counted from PlanRedeemed/PlanRevoked events filtered to tracked plan IDs; revocation rows show the vested payout, with the unvested remainder returned to the program admin and removed from the group total.
   "Unwrapped &amp; held" is capped by the wallet's current native balance, so tokens unwrapped and then moved on count as moved onward. If a plan NFT is transferred, claims still show under the original recipient.
-  Treasury wallet balances are Auto EVM only; consensus-chain holdings are not shown.
 `;
 
 // ---------- boot / refresh loop ----------

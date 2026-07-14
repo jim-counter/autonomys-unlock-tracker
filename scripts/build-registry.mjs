@@ -6,6 +6,7 @@
 
 const BASE = 'https://explorer.auto-evm.mainnet.autonomys.xyz/api/v2';
 const WAI3 = '0x7ba06c7374566c68495f7e4690093521f6b991bb';
+const MIN_PLAN_AMOUNT = 100n * 10n ** 18n; // plans below this are test grants, not real allocations
 const LOCKERS = {
   lockup: '0x06B6D0AbD9dfC7F04F478B089FD89d4107723264',
   vesting: '0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C',
@@ -18,13 +19,13 @@ const GROUP_ADMINS = {
   '0xe6a6dcffb470031d4eee2cc9f83fc8d5135496de': 'Vendors',
 };
 const TREASURY_CREATORS = {
-  '0xb29f4885810749da79a1be7c5ef3f3c02fc45485': 'Foundation LT Treasury',
+  '0xb29f4885810749da79a1be7c5ef3f3c02fc45485': 'Foundation Long-Term Treasury',
   '0xef0eaa2938f0dd71be633a89552143652fbaf00c': 'Autonomys Labs Treasury',
 };
-// The LT Treasury and Labs Treasury funding wallets are omitted here: they only
+// The Long-Term Treasury and Labs Treasury funding wallets are omitted here: they only
 // existed to fill the Hedgey lockups and will not be used again.
 const TREASURY_WALLETS = [
-  { name: 'Foundation NT Treasury', address: '0x0CE164559900cc9BE9b61cCac7dC6A32cbE4A763' },
+  { name: 'Foundation Near-Term Treasury', address: '0x0CE164559900cc9BE9b61cCac7dC6A32cbE4A763' },
   { name: 'Market Liquidity', address: '0x09884e157cbA9844d7F29ce52Ca04BF0146F3f06' },
   { name: 'Operations', address: '0xc48f24BE2Df32d6f2c2c34a9E2EB1Ff420f572E0' },
   { name: 'Ambassadors', address: '0xb7ce125198D190814401a6C31866B206Cb71EbF3' },
@@ -59,6 +60,7 @@ async function planCreations(locker, type) {
       if (!dec || !dec.method_call.startsWith('PlanCreated')) continue;
       const p = Object.fromEntries(dec.parameters.map((x) => [x.name, x.value]));
       if (p.token.toLowerCase() !== WAI3) continue;
+      if (BigInt(p.amount) < MIN_PLAN_AMOUNT) continue;
       out.push({
         planId: p.id,
         type,

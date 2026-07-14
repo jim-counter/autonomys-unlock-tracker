@@ -7,12 +7,13 @@ Ambassadors, plus the Foundation and Autonomys Labs treasury allocations.
 ## How it works
 
 - `scripts/build-registry.mjs` scans every `PlanCreated` event on the two Hedgey
-  contracts (WAI3 plans only) and attributes each plan by its creating wallet, per the
+  contracts (WAI3 plans of at least 100 AI3 - smaller ones are test grants) and
+  attributes each plan by its creating wallet, per the
   [transparency forum post](https://forum.autonomys.xyz/t/subspace-foundation-autonomys-labs-wallets-official-addresses-for-transparency/4917/3):
-  the four group admins map to their groups, the Foundation LT Treasury and Autonomys Labs
-  Treasury self-lockups go to the treasury section, and everything else is the
-  Ambassadors program (created by the ambassador Safe and predecessors; creator address
-  recorded per plan). Writes `data/registry.json` + `data/registry.js`.
+  the four group admins map to their groups, the Foundation Long-Term Treasury and
+  Autonomys Labs Treasury self-lockups go to the treasury section, and everything else
+  is the Ambassadors program (created by the ambassador Safe and predecessors; creator
+  address recorded per plan). Writes `data/registry.json` + `data/registry.js`.
 - `index.html` is a self-contained static dashboard. It loads the registry, then polls
   Blockscout for `PlanRedeemed` / `PlanRevoked` events filtered to the tracked plan NFT
   IDs (so unrelated activity on the shared Hedgey contracts is excluded). Revocations
@@ -52,8 +53,8 @@ Opening `index.html` directly from disk also works since the registry loads via 
 | Advisors admin | `0x99c2Cb8d62Fc041D21367084Ce0DeC646DE6Da73` |
 | Vendors admin | `0xE6A6DcFFB470031D4eEe2cC9f83FC8d5135496DE` |
 | Ambassador program Safe (plan creator) | `0xba0C1DD5072125337d0c827B3162523bA7B20415` |
-| Foundation LT Treasury lockup vault (100M plan recipient) | `0x7172f980f81aDDaCBd77645A07835d8218E8E47b` |
-| Autonomys Labs Treasury lockup vault (70M plan recipient) | `0x1cCeB7b286b54F70E3d33783009Cb511cF9cC05d` |
+| Foundation Long-Term Treasury beneficiary (100M plan recipient) | `0x7172f980f81aDDaCBd77645A07835d8218E8E47b` |
+| Autonomys Labs Treasury beneficiary (70M plan recipient) | `0x1cCeB7b286b54F70E3d33783009Cb511cF9cC05d` |
 
 Explorer: https://explorer.auto-evm.mainnet.autonomys.xyz
 
@@ -67,13 +68,6 @@ Explorer: https://explorer.auto-evm.mainnet.autonomys.xyz
   TGE-start lockup plans like investors.
 - Ambassadors: monthly revocable vesting grants (Dec 2025 onward) plus some lockups,
   created by the ambassador Safe; already redeeming before the milestone.
-- Treasuries: Foundation LT Treasury (100M) and Autonomys Labs Treasury (70M) hold TGE-start 48-month
-  lockup plans with the same milestone cliff (+25M / +17.5M at the milestone).
-
-## Known gaps
-
-- Consensus-chain holdings of the official wallets are not visible to the Auto EVM
-  explorer; the balances table is Auto EVM only.
-- Market Liquidity shows 9.3M on Auto EVM vs 20M (2%) in the tokenomics; the remainder
-  presumably sits on consensus or with market makers.
-- Pre-WAI3 Hedgey plans (Nov-Dec 2025, non-WAI3 tokens) are excluded.
+- Treasuries: Foundation Long-Term Treasury (100M) and Autonomys Labs Treasury (70M)
+  hold TGE-start 48-month lockup plans with the same milestone cliff (+25M / +17.5M at
+  the milestone).

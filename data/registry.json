@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-07-14T09:37:04.664Z",
+ "generatedAt": "2026-07-14T10:40:35.982Z",
  "lockers": {
   "lockup": "0x06B6D0AbD9dfC7F04F478B089FD89d4107723264",
   "vesting": "0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C"
@@ -1271,19 +1271,6 @@
   },
   "Ambassadors": {
    "plans": [
-    {
-     "planId": "12",
-     "type": "lockup",
-     "recipient": "0xD3638F7E931F440a654e81280Db75f9eD44BbDD9",
-     "amount": "1000000000000000000",
-     "start": 1735732800,
-     "cliff": 1767268800,
-     "rate": "7927447995",
-     "period": 1,
-     "txHash": "0x6e1dbc7423f6596a58814b8c2d287af2a85314d48fff0ab08f46aede91b60990",
-     "createdAt": "2026-05-27T13:51:28.000000Z",
-     "creator": "0xb84592d6a121d86c04823400211bbd1b9a74f82e"
-    },
     {
      "planId": "134",
      "type": "vesting",
@@ -2637,19 +2624,6 @@
      "creator": "0xba0c1dd5072125337d0c827b3162523ba7b20415"
     },
     {
-     "planId": "28",
-     "type": "vesting",
-     "recipient": "0xD3638F7E931F440a654e81280Db75f9eD44BbDD9",
-     "amount": "1000000000000000000",
-     "start": 1767268800,
-     "cliff": 1767268800,
-     "rate": "1000000000000000000",
-     "period": 1,
-     "txHash": "0xe9410341994373768c811ed594531cad2050d9c3fd6447d1dbe801570684d8a4",
-     "createdAt": "2026-01-02T14:23:47.000000Z",
-     "creator": "0x5e4224774bc189b0b3a2d9f288fced8443cd5c9c"
-    },
-    {
      "planId": "27",
      "type": "vesting",
      "recipient": "0x33994497919cFcfebAD1b6DA9bafc920d84Cf57e",
@@ -2674,45 +2648,6 @@
      "txHash": "0x32f6792fbeba55d95793e59901993b8e034702f71466abcd18493fe29b1f6035",
      "createdAt": "2025-12-24T15:31:52.000000Z",
      "creator": "0xba0c1dd5072125337d0c827b3162523ba7b20415"
-    },
-    {
-     "planId": "25",
-     "type": "vesting",
-     "recipient": "0x1153F17734D15eaCA012dEcB43091479B9c5e888",
-     "amount": "1000000000000000000",
-     "start": 1766404800,
-     "cliff": 1766404800,
-     "rate": "1000000000000000000",
-     "period": 1,
-     "txHash": "0x6025cb35553510b6f5df0e91482fca399273e7c2c7018db1829bec91d8e053c3",
-     "createdAt": "2025-12-23T17:14:20.000000Z",
-     "creator": "0xba0c1dd5072125337d0c827b3162523ba7b20415"
-    },
-    {
-     "planId": "24",
-     "type": "vesting",
-     "recipient": "0x5e4224774Bc189b0B3A2D9F288fced8443Cd5C9C",
-     "amount": "1000000000000000000",
-     "start": 1766404800,
-     "cliff": 1766404800,
-     "rate": "1000000000000000000",
-     "period": 1,
-     "txHash": "0x5a1c943331409806575a0b30c50e5af3ae45c653462c95ff1818f6ec256d4db1",
-     "createdAt": "2025-12-23T15:55:57.000000Z",
-     "creator": "0xba0c1dd5072125337d0c827b3162523ba7b20415"
-    },
-    {
-     "planId": "23",
-     "type": "vesting",
-     "recipient": "0xCF4ac45E1B6b8305Ff5B8D06c7ca1E36BF5397A4",
-     "amount": "1000000000000000000",
-     "start": 1766404800,
-     "cliff": 1766404800,
-     "rate": "1000000000000000000",
-     "period": 1,
-     "txHash": "0xef097c79189e6e6fd1305907b0c6f8c279b7ae5b1482611c2d56ed614935242b",
-     "createdAt": "2025-12-23T15:36:35.000000Z",
-     "creator": "0xba0c1dd5072125337d0c827b3162523ba7b20415"
     }
    ]
   }
@@ -2730,7 +2665,7 @@
     "period": 1,
     "txHash": "0xa33d78cbe2d639137ce87519fa76f8ae507ae2c55c249afac31329ad36d9734a",
     "createdAt": "2026-07-10T14:24:04.000000Z",
-    "name": "Foundation LT Treasury",
+    "name": "Foundation Long-Term Treasury",
     "creator": "0xb29f4885810749da79a1be7c5ef3f3c02fc45485"
    },
    {
@@ -2750,7 +2685,7 @@
   ],
   "wallets": [
    {
-    "name": "Foundation NT Treasury",
+    "name": "Foundation Near-Term Treasury",
     "address": "0x0CE164559900cc9BE9b61cCac7dC6A32cbE4A763"
    },
    {
