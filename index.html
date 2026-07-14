@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI3 Unlock Tracker - 12-month TGE milestone</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --good: #006300;
+    --g-investors: #2a78d6;
+    --g-team: #1baf7a;
+    --g-advisors: #eda100;
+    --g-vendors: #e87ba4;
+    --g-ambassadors: #4a3aa7;
+    --g-other: #898781;
+    --flow-wrapped: #2a78d6;
+    --flow-unwrapped: #1baf7a;
+    --flow-moved: #eb6834;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface-1: #1a1a19;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --good: #0ca30c;
+      --g-investors: #3987e5;
+      --g-team: #199e70;
+      --g-advisors: #c98500;
+      --g-vendors: #d55181;
+      --g-ambassadors: #9085e9;
+      --flow-wrapped: #3987e5;
+      --flow-unwrapped: #199e70;
+      --flow-moved: #d95926;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--text-primary);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 20px 56px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 4px; }
+  h1 { font-size: 19px; font-weight: 650; margin: 0; }
+  .sub { color: var(--text-secondary); font-size: 13px; }
+  .status { margin-left: auto; color: var(--text-muted); font-size: 12px; }
+  .status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--good); margin-right: 5px; }
+  .toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+  .toggle input { position: absolute; opacity: 0; }
+  .toggle .tr { width: 30px; height: 17px; border-radius: 9px; background: var(--baseline); position: relative; transition: background 0.15s; flex: none; }
+  .toggle .tr::after { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--surface-1); transition: left 0.15s; }
+  .toggle input:checked + .tr { background: var(--g-ambassadors); }
+  .toggle input:checked + .tr::after { left: 15px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 16px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .card .label { color: var(--text-secondary); font-size: 12.5px; }
+  .card .value { font-size: 27px; font-weight: 600; margin-top: 2px; }
+  .card .note { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+  .hero .value { font-size: 48px; line-height: 1.1; letter-spacing: 0.5px; }
+  .hero .value span { color: var(--text-muted); font-size: 20px; font-weight: 500; }
+
+  .gcard .ghead { display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .gcard .gname { font-weight: 650; }
+  .gcard .rows { margin-top: 10px; display: grid; gap: 4px; font-size: 13px; }
+  .gcard .rows div { display: flex; justify-content: space-between; }
+  .gcard .rows .k { color: var(--text-secondary); }
+  .gcard .rows .v { font-variant-numeric: tabular-nums; }
+  .meter { margin-top: 10px; height: 8px; border-radius: 4px; overflow: hidden; display: flex; }
+  .meter .fill { border-radius: 4px 0 0 4px; }
+  .meter .track { flex: 1; }
+  .pct { margin-top: 5px; font-size: 12px; color: var(--text-secondary); }
+
+  section { margin-top: 30px; }
+  h2 { font-size: 15px; font-weight: 650; margin: 0 0 2px; }
+  .desc { color: var(--text-secondary); font-size: 12.5px; margin: 0 0 12px; }
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 10px; font-size: 12.5px; color: var(--text-secondary); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; }
+  .legend i.sq { width: 10px; height: 10px; border-radius: 3px; }
+
+  #chart-wrap { position: relative; }
+  #chart { width: 100%; height: auto; display: block; }
+  #tooltip {
+    position: absolute; pointer-events: none; display: none; z-index: 5;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); min-width: 160px;
+  }
+  #tooltip .tt-date { color: var(--text-secondary); margin-bottom: 4px; }
+  #tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; }
+  #tooltip .tt-row .n { display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); }
+  #tooltip .tt-row .n i { width: 8px; height: 8px; border-radius: 2px; }
+  #tooltip .tt-row .a { font-variant-numeric: tabular-nums; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--text-muted); font-weight: 500; font-size: 12px;
+       border-bottom: 1px solid var(--grid); padding: 6px 10px; white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--baseline); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: currentColor; }
+  .tag { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .empty { color: var(--text-muted); padding: 18px 10px; text-align: center; }
+  button.mini {
+    font: inherit; font-size: 12px; color: var(--text-secondary); background: none;
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; cursor: pointer;
+  }
+  button.mini:hover { color: var(--text-primary); border-color: var(--baseline); }
+  .sublist { color: var(--text-secondary); font-size: 12px; margin-top: 4px; }
+  .foot { margin-top: 26px; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+
+  /* flow bars (where claimed tokens went) */
+  .flowrow { display: grid; grid-template-columns: 150px 1fr 90px; align-items: center; gap: 12px; padding: 7px 0; }
+  .flowrow .fname { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .flowrow .ftotal { font-size: 12.5px; color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+  .flowbar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; background: var(--grid); }
+  .flowbar .seg { height: 100%; }
+  .flowbar .seg + .seg { border-left: 2px solid var(--surface-1); }
+  .minibar { display: inline-flex; width: 90px; height: 10px; border-radius: 3px; overflow: hidden; background: var(--grid); vertical-align: middle; }
+  .minibar .seg { height: 100%; }
+  .minibar .seg + .seg { border-left: 2px solid var(--surface-1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AI3 unlock tracker</h1>
+    <div class="sub">Hedgey claims on Auto EVM &middot; 12-month TGE milestone: <b>Jul 16, 2026 12:00 UTC</b></div>
+    <label class="toggle" title="Ambassador program grants are small monthly plans that predate the milestone; hidden by default to keep the milestone view clean.">
+      <input type="checkbox" id="amb-toggle"><span class="tr"></span>Show ambassadors
+    </label>
+    <div class="status"><span class="dot"></span><span id="refresh-status">loading&hellip;</span></div>
+  </header>
+
+  <div class="cards">
+    <div class="card hero">
+      <div class="label" id="countdown-label">Unlock milestone in</div>
+      <div class="value" id="countdown">&ndash;</div>
+      <div class="note" id="milestone-amt"></div>
+    </div>
+    <div class="card">
+      <div class="label">Claimable right now</div>
+      <div class="value" id="kpi-claimable">&ndash;</div>
+      <div class="note">unlocked &amp; not yet claimed (excl. treasury)</div>
+    </div>
+    <div class="card">
+      <div class="label">Claimed so far</div>
+      <div class="value" id="kpi-claimed">&ndash;</div>
+      <div class="note" id="kpi-claimed-note">from Hedgey lockup + vesting</div>
+    </div>
+    <div class="card">
+      <div class="label">Total in Hedgey plans</div>
+      <div class="value" id="kpi-total">&ndash;</div>
+      <div class="note" id="kpi-total-note"></div>
+    </div>
+  </div>
+
+  <div class="cards" id="group-cards"></div>
+
+  <section>
+    <h2>Foundation &amp; Autonomys Labs allocations</h2>
+    <p class="desc">Treasury allocations locked in Hedgey by the Subspace Foundation and Autonomys Labs, plus liquid balances of the official operational wallets on Auto EVM.</p>
+    <div class="cards" id="treasury-cards" style="margin-top:0"></div>
+    <div class="panel" style="padding:0;margin-top:12px">
+      <table id="treasury-wallets">
+        <thead><tr>
+          <th>Official wallet</th><th>Address</th><th class="num">Native AI3</th><th class="num">WAI3</th>
+        </tr></thead>
+        <tbody><tr><td colspan="4" class="empty">Loading balances&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Unlock schedule projection</h2>
+    <p class="desc">Cumulative tokens unlocked (claimable) per group over the full schedule. The 12-month cliff releases ~25% in one step for TGE-start plans, then per-second streaming.</p>
+    <div class="panel">
+      <div class="legend" id="chart-legend"></div>
+      <div id="chart-wrap">
+        <svg id="chart" viewBox="0 0 1120 380" role="img" aria-label="Cumulative unlocked AI3 per group over time"></svg>
+        <div id="tooltip"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Live claim feed</h2>
+    <p class="desc">Redemptions of the tracked Hedgey plans, newest first. Auto-refreshes every 45s.</p>
+    <div class="panel" style="padding:0">
+      <table id="feed">
+        <thead><tr>
+          <th>Time (UTC)</th><th>Group</th><th>Recipient</th><th class="num">Amount (AI3)</th><th>Contract</th><th>Tx</th>
+        </tr></thead>
+        <tbody><tr><td colspan="6" class="empty">No claims yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where claimed tokens went</h2>
+    <p class="desc" id="flow-desc">Per group: claimed tokens still held wrapped (WAI3), unwrapped to native AI3 and held, or moved onward out of the recipient wallet.</p>
+    <div class="panel">
+      <div class="legend">
+        <span><i class="sq" style="background:var(--flow-wrapped)"></i>Held as WAI3</span>
+        <span><i class="sq" style="background:var(--flow-unwrapped)"></i>Unwrapped &amp; held</span>
+        <span><i class="sq" style="background:var(--flow-moved)"></i>Moved onward</span>
+      </div>
+      <div id="flow-bars"><div class="empty">No claims yet.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Claimants &amp; post-claim movement</h2>
+    <p class="desc">Everyone who has redeemed, what they still hold, and what has moved out of their wallet since.</p>
+    <div class="panel" style="padding:0">
+      <table id="claimants">
+        <thead><tr>
+          <th>Recipient</th><th>Group</th><th class="num">Claimed (AI3)</th><th>Flow</th><th class="num">Holds WAI3</th><th class="num">Holds AI3</th><th class="num">Unwrapped</th><th></th>
+        </tr></thead>
+        <tbody><tr><td colspan="8" class="empty">No claimants yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="foot" id="footnotes"></div>
+</div>
+
+<script src="data/registry.js"></script>
+<script>
+'use strict';
+const BASE = 'https://explorer.auto-evm.mainnet.autonomys.xyz/api/v2';
+const EXPLORER = 'https://explorer.auto-evm.mainnet.autonomys.xyz';
+const WAI3 = '0x7ba06C7374566c68495f7e4690093521F6B991bb';
+const ZERO = '0x0000000000000000000000000000000000000000';
+const MILESTONE = 1784203200; // 2026-07-16 12:00 UTC
+const TGE = 1752667200;       // 2025-07-16 12:00 UTC
+const REFRESH_MS = 45000;
+const GROUPS = ['Investors', 'Team', 'Advisors', 'Vendors', 'Ambassadors'];
+const COLORS = {
+  Investors: 'var(--g-investors)', Team: 'var(--g-team)', Advisors: 'var(--g-advisors)',
+  Vendors: 'var(--g-vendors)', Ambassadors: 'var(--g-ambassadors)',
+  'Foundation LT Treasury': 'var(--g-other)', 'Autonomys Labs Treasury': 'var(--g-other)',
+};
+const R = window.REGISTRY;
+const LOCKUP = R.lockers.lockup.toLowerCase();
+const VESTING = R.lockers.vesting.toLowerCase();
+
+// Ambassadors are hidden by default; the toggle filters them out of every section.
+let showAmbassadors = localStorage.getItem('showAmbassadors') === '1';
+const activeGroups = () => showAmbassadors ? GROUPS : GROUPS.filter((g) => g !== 'Ambassadors');
+const activePlans = () => showAmbassadors ? plans : plans.filter((p) => p.group !== 'Ambassadors');
+const groupVisible = (g) => showAmbassadors || g !== 'Ambassadors';
+
+// ---------- registry-derived structures ----------
+function toPlan(p, group, section) {
+  return {
+    key: p.type + ':' + p.planId,
+    group, section,
+    recipient: p.recipient.toLowerCase(),
+    amount: Number(p.amount) / 1e18,
+    start: p.start,
+    cliff: p.cliff,
+    rate: (Number(p.rate) / 1e18) / p.period, // AI3 per second
+    type: p.type,
+  };
+}
+const plans = [];          // group plans (the 5 groups)
+const treasuryPlans = [];  // Foundation LT + Autonomys Labs lockups
+const planByKey = new Map();
+for (const g of GROUPS) {
+  for (const p of R.groups[g].plans) {
+    const plan = toPlan(p, g, 'groups');
+    plans.push(plan);
+    planByKey.set(plan.key, plan);
+  }
+}
+for (const p of R.treasury.plans) {
+  const plan = toPlan(p, p.name, 'treasury');
+  treasuryPlans.push(plan);
+  planByKey.set(plan.key, plan);
+}
+
+function accrued(p, t) {
+  if (t < p.cliff || t < p.start) return 0;
+  return Math.min(p.amount, p.rate * (t - p.start));
+}
+
+// ---------- formatting ----------
+const fmt = (n, d = 1) => {
+  if (n >= 1e6) return (n / 1e6).toFixed(d) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(d) + 'K';
+  return n.toFixed(n >= 100 ? 0 : 2);
+};
+const fmtFull = (n) => Math.round(n).toLocaleString('en-US');
+const short = (a) => a.slice(0, 6) + '…' + a.slice(-4);
+const addrLink = (a) => `<a class="mono" href="${EXPLORER}/address/${a}" target="_blank" rel="noopener">${short(a)}</a>`;
+const groupTag = (g) => `<span class="tag"><span class="swatch" style="background:${COLORS[g] || 'var(--g-other)'}"></span>${g}</span>`;
+
+// ---------- API ----------
+async function api(path, params = {}) {
+  const url = new URL(BASE + path);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(res.status + ' ' + path);
+  return res.json();
+}
+async function pagedTransfers(address, params, maxPages = 20) {
+  const items = [];
+  let extra = {};
+  for (let i = 0; i < maxPages; i++) {
+    const page = await api(`/addresses/${address}/token-transfers`, { ...params, ...extra });
+    items.push(...page.items);
+    if (!page.next_page_params) break;
+    extra = page.next_page_params;
+  }
+  return items;
+}
+
+// ---------- claims ----------
+// A claim is a PlanRedeemed/PlanRevoked event whose plan ID belongs to a tracked plan,
+// so unrelated activity on the shared Hedgey contracts is ignored. For revocations,
+// `amount` is the vested part paid to the recipient and `revoked` returned to the admin.
+let claims = [];
+const OLDEST_RELEVANT = '2025-12-01T00:00:00Z'; // earliest tracked plans (ambassadors) are from Dec 2025
+
+async function redemptionLogs(locker, type, maxPages = 80) {
+  const out = [];
+  let extra = {};
+  for (let i = 0; i < maxPages; i++) {
+    const page = await api(`/addresses/${locker}/logs`, extra);
+    for (const l of page.items) {
+      const dec = l.decoded;
+      if (!dec) continue;
+      const name = dec.method_call.split('(')[0];
+      if (name !== 'PlanRedeemed' && name !== 'PlanRevoked') continue;
+      const params = Object.fromEntries(dec.parameters.map((x) => [x.name, x.value]));
+      const plan = planByKey.get(type + ':' + params.id);
+      if (!plan) continue;
+      out.push({
+        ts: l.block_timestamp,
+        unix: Date.parse(l.block_timestamp) / 1000,
+        plan,
+        amount: Number(params.amountRedeemed) / 1e18,
+        revoked: name === 'PlanRevoked' ? Number(params.revokedAmount) / 1e18 : 0,
+        kind: name === 'PlanRevoked' ? 'Revoked' : (type === 'vesting' ? 'Vesting' : 'Lockup'),
+        tx: l.transaction_hash,
+        logIndex: l.index,
+      });
+    }
+    const last = page.items[page.items.length - 1];
+    if (!page.next_page_params || (last && last.block_timestamp < OLDEST_RELEVANT)) break;
+    extra = page.next_page_params;
+  }
+  return out;
+}
+
+async function refreshClaims() {
+  const [a, b] = [
+    await redemptionLogs(LOCKUP, 'lockup'),
+    await redemptionLogs(VESTING, 'vesting'),
+  ];
+  claims = [...a, ...b].sort((x, y) => y.unix - x.unix || y.logIndex - x.logIndex);
+}
+
+// claimed + revoked + adjusted-claimable rollup for any plan list
+function rollup(planList, t) {
+  const claimedByPlan = new Map();
+  const revokedByPlan = new Map();
+  for (const c of claims) {
+    claimedByPlan.set(c.plan.key, (claimedByPlan.get(c.plan.key) || 0) + c.amount);
+    if (c.revoked) revokedByPlan.set(c.plan.key, (revokedByPlan.get(c.plan.key) || 0) + c.revoked);
+  }
+  const by = {};
+  for (const p of planList) {
+    const o = by[p.group] || (by[p.group] = { total: 0, claimable: 0, claimed: 0, plans: 0, recipients: new Set() });
+    const claimed = claimedByPlan.get(p.key) || 0;
+    const revoked = revokedByPlan.get(p.key) || 0;
+    o.total += p.amount - revoked;
+    o.claimed += claimed;
+    // a revoked plan pays out all vested funds at revocation; nothing further is claimable
+    o.claimable += revoked > 0 ? 0 : Math.max(0, accrued(p, t) - claimed);
+    o.plans++;
+    o.recipients.add(p.recipient);
+  }
+  return by;
+}
+
+// ---------- rendering ----------
+function renderKPIs() {
+  const now = Date.now() / 1000;
+  const groups = activeGroups();
+  const visPlans = activePlans();
+  const gt = rollup(visPlans, now);
+  for (const g of groups) gt[g] = gt[g] || { total: 0, claimable: 0, claimed: 0, plans: 0, recipients: new Set() };
+  const claimable = groups.reduce((s, g) => s + gt[g].claimable, 0);
+  const claimed = groups.reduce((s, g) => s + gt[g].claimed, 0);
+  const total = groups.reduce((s, g) => s + gt[g].total, 0);
+
+  const jumpOf = (list) => {
+    let j = 0;
+    for (const p of list) j += accrued(p, MILESTONE + 1) - accrued(p, MILESTONE - 1);
+    return j;
+  };
+  const jump = jumpOf(visPlans);
+  const jumpTreasury = jumpOf(treasuryPlans);
+
+  document.getElementById('kpi-claimable').textContent = fmt(claimable) + ' AI3';
+  document.getElementById('kpi-claimed').textContent = fmt(claimed) + ' AI3';
+  document.getElementById('kpi-claimed-note').textContent = claimed + claimable > 0
+    ? (100 * claimed / (claimed + claimable)).toFixed(1) + '% of all unlocked tokens so far'
+    : 'from Hedgey lockup + vesting';
+  document.getElementById('kpi-total').textContent = fmt(total + treasuryPlans.reduce((s, p) => s + p.amount, 0)) + ' AI3';
+  document.getElementById('kpi-total-note').textContent =
+    `${visPlans.length} group + ${treasuryPlans.length} treasury plans`;
+  document.getElementById('milestone-amt').textContent =
+    `releases ${fmt(jump + jumpTreasury)} AI3 in one step (${fmt(jumpTreasury)} of it treasury)`;
+
+  const cards = groups.map((g) => {
+    const o = gt[g];
+    const unlocked = o.claimed + o.claimable;
+    const pct = unlocked > 0 ? Math.min(100, 100 * o.claimed / unlocked) : 0;
+    const jumpG = jumpOf(plans.filter((p) => p.group === g));
+    return `<div class="card gcard">
+      <div class="ghead"><span class="swatch" style="background:${COLORS[g]}"></span><span class="gname">${g}</span></div>
+      <div class="rows">
+        <div><span class="k">Total in plans</span><span class="v">${fmtFull(o.total)}</span></div>
+        <div><span class="k">At milestone</span><span class="v">+${fmtFull(jumpG)}</span></div>
+        <div><span class="k">Claimable now</span><span class="v">${fmtFull(o.claimable)}</span></div>
+        <div><span class="k">Claimed</span><span class="v">${fmtFull(o.claimed)}</span></div>
+        <div><span class="k">Plans / wallets</span><span class="v">${o.plans} / ${o.recipients.size}</span></div>
+      </div>
+      <div class="meter" style="background:color-mix(in srgb, ${COLORS[g]} 18%, var(--surface-1))">
+        <div class="fill" style="background:${COLORS[g]};width:${pct}%"></div><div class="track"></div>
+      </div>
+      <div class="pct">${pct.toFixed(1)}% of unlocked tokens claimed</div>
+    </div>`;
+  });
+  document.getElementById('group-cards').innerHTML = cards.join('');
+
+  // treasury plan cards
+  const tt = rollup(treasuryPlans, now);
+  document.getElementById('treasury-cards').innerHTML = treasuryPlans.map((p) => {
+    const o = tt[p.group];
+    const jumpT = accrued(p, MILESTONE + 1) - accrued(p, MILESTONE - 1);
+    const unlocked = o.claimed + o.claimable;
+    const pct = unlocked > 0 ? Math.min(100, 100 * o.claimed / unlocked) : 0;
+    return `<div class="card gcard">
+      <div class="ghead"><span class="swatch" style="background:var(--g-other)"></span><span class="gname">${p.group}</span></div>
+      <div class="rows">
+        <div><span class="k">Locked in Hedgey</span><span class="v">${fmtFull(p.amount)}</span></div>
+        <div><span class="k">At milestone</span><span class="v">+${fmtFull(jumpT)}</span></div>
+        <div><span class="k">Claimable now</span><span class="v">${fmtFull(o.claimable)}</span></div>
+        <div><span class="k">Claimed</span><span class="v">${fmtFull(o.claimed)}</span></div>
+        <div><span class="k">Recipient vault</span><span class="v">${addrLink(p.recipient)}</span></div>
+      </div>
+      <div class="meter" style="background:color-mix(in srgb, var(--g-other) 18%, var(--surface-1))">
+        <div class="fill" style="background:var(--g-other);width:${pct}%"></div><div class="track"></div>
+      </div>
+      <div class="pct">${pct.toFixed(1)}% of unlocked tokens claimed</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCountdown() {
+  const now = Date.now() / 1000;
+  const el = document.getElementById('countdown');
+  const label = document.getElementById('countdown-label');
+  let d = MILESTONE - now;
+  if (d <= 0) {
+    label.textContent = 'Unlock milestone';
+    const since = -d;
+    el.innerHTML = since < 172800
+      ? 'LIVE <span>' + Math.floor(since / 3600) + 'h ago</span>'
+      : 'passed <span>' + Math.floor(since / 86400) + 'd ago</span>';
+    return;
+  }
+  const days = Math.floor(d / 86400); d -= days * 86400;
+  const h = Math.floor(d / 3600); d -= h * 3600;
+  const m = Math.floor(d / 60);
+  const s = Math.floor(d - m * 60);
+  el.innerHTML = days > 0
+    ? `${days}<span>d</span> ${h}<span>h</span> ${m}<span>m</span> ${s}<span>s</span>`
+    : `${h}<span>h</span> ${m}<span>m</span> ${s}<span>s</span>`;
+}
+
+function renderFeed() {
+  const tbody = document.querySelector('#feed tbody');
+  const vis = claims.filter((c) => groupVisible(c.plan.group));
+  if (!vis.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No claims yet. The feed will populate as recipients redeem from Hedgey.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = vis.slice(0, 200).map((c) => `<tr>
+    <td>${c.ts.slice(0, 16).replace('T', ' ')}</td>
+    <td>${groupTag(c.plan.group)}</td>
+    <td>${addrLink(c.plan.recipient)}</td>
+    <td class="num">${fmtFull(c.amount)}${c.revoked ? `<div class="sublist">+${fmtFull(c.revoked)} returned to admin</div>` : ''}</td>
+    <td>${c.kind}${c.kind === 'Revoked' ? ' ⚠' : ''}</td>
+    <td><a class="mono" href="${EXPLORER}/tx/${c.tx}" target="_blank" rel="noopener">${c.tx.slice(0, 10)}…</a></td>
+  </tr>`).join('') + (vis.length > 200 ? `<tr><td colspan="6" class="empty">Showing latest 200 of ${vis.length} claims.</td></tr>` : '');
+}
+
+// ---------- treasury wallet balances ----------
+async function refreshTreasuryWallets() {
+  const rows = [];
+  for (const w of R.treasury.wallets) {
+    try {
+      const info = await api(`/addresses/${w.address}`);
+      const balances = await api(`/addresses/${w.address}/token-balances`);
+      const wai3 = balances.find((b) => {
+        const t = b.token || {};
+        return (t.address_hash || t.address || '').toLowerCase() === WAI3.toLowerCase();
+      });
+      rows.push({ ...w, native: Number(info.coin_balance || 0) / 1e18, wai3: wai3 ? Number(wai3.value) / 1e18 : 0 });
+    } catch (e) {
+      rows.push({ ...w, native: null, wai3: null });
+    }
+  }
+  document.querySelector('#treasury-wallets tbody').innerHTML = rows.map((r) => `<tr>
+    <td>${r.name}</td>
+    <td>${addrLink(r.address)}</td>
+    <td class="num">${r.native === null ? '–' : fmtFull(r.native)}</td>
+    <td class="num">${r.wai3 === null ? '–' : fmtFull(r.wai3)}</td>
+  </tr>`).join('');
+}
+
+// ---------- post-claim movement & flow ----------
+// For each claimant: WAI3 balance (still wrapped), native balance, and WAI3 outflows
+// split into unwraps (burn transfers to the zero address) vs onward transfers.
+const movement = new Map(); // recipient -> {state, wai3, native, unwrapped, sentOn, outs:[]}
+async function loadMovement(recipient) {
+  const m = movement.get(recipient);
+  if (m && (m.state === 'loading' || m.state === 'done')) return;
+  movement.set(recipient, { state: 'loading' });
+  renderClaimants();
+  try {
+    const info = await api(`/addresses/${recipient}`);
+    const balances = await api(`/addresses/${recipient}/token-balances`);
+    const outsRaw = await pagedTransfers(recipient, { type: 'ERC-20', filter: 'from', token: WAI3 }, 4);
+    const wai3 = balances.find((b) => {
+      const t = b.token || {};
+      return (t.address_hash || t.address || '').toLowerCase() === WAI3.toLowerCase();
+    });
+    let unwrapped = 0, sentOn = 0;
+    const outs = [];
+    for (const t of outsRaw) {
+      if (t.from.hash.toLowerCase() !== recipient) continue;
+      const amt = Number(t.total.value) / 1e18;
+      const to = t.to.hash.toLowerCase();
+      if (to === ZERO || to === WAI3.toLowerCase()) unwrapped += amt;
+      else { sentOn += amt; outs.push({ ts: t.timestamp, to, amount: amt }); }
+    }
+    movement.set(recipient, {
+      state: 'done',
+      native: Number(info.coin_balance || 0) / 1e18,
+      wai3: wai3 ? Number(wai3.value) / 1e18 : 0,
+      unwrapped, sentOn,
+      outs: outs.slice(0, 4),
+    });
+  } catch (e) {
+    movement.set(recipient, { state: 'error' });
+  }
+  renderClaimants();
+  renderFlow();
+}
+
+// split a claimant's claimed amount into [held wrapped, unwrapped & held, moved onward]
+function flowSplit(claimed, m) {
+  if (!m || m.state !== 'done' || claimed <= 0) return null;
+  const heldWrapped = Math.min(m.wai3, claimed);
+  const unwrappedHeld = Math.min(m.native, m.unwrapped, claimed - heldWrapped);
+  const moved = Math.max(0, claimed - heldWrapped - unwrappedHeld);
+  return [heldWrapped, unwrappedHeld, moved];
+}
+
+function claimantRows() {
+  const byR = new Map();
+  for (const c of claims) {
+    if (c.amount <= 0 || !groupVisible(c.plan.group)) continue;
+    const addr = c.plan.recipient;
+    let r = byR.get(addr);
+    if (!r) byR.set(addr, r = { claimed: 0, groups: new Set(), last: c.unix });
+    r.claimed += c.amount;
+    r.groups.add(c.plan.group);
+    r.last = Math.max(r.last, c.unix);
+    r.label = [...r.groups].join(' / ');
+  }
+  return [...byR.entries()].sort((a, b) => b[1].claimed - a[1].claimed);
+}
+
+const FLOW_COLORS = ['var(--flow-wrapped)', 'var(--flow-unwrapped)', 'var(--flow-moved)'];
+function barHTML(cls, split, total) {
+  if (!split || total <= 0) return `<span class="${cls}"></span>`;
+  const segs = split.map((v, i) =>
+    v > 0 ? `<span class="seg" style="width:${(100 * v / total).toFixed(1)}%;background:${FLOW_COLORS[i]}"></span>` : ''
+  ).join('');
+  return `<span class="${cls}">${segs}</span>`;
+}
+
+function renderFlow() {
+  const el = document.getElementById('flow-bars');
+  const rows = claimantRows();
+  if (!rows.length) { el.innerHTML = '<div class="empty">No claims yet.</div>'; return; }
+  // aggregate by group over traced claimants
+  const agg = {}; let traced = 0;
+  for (const [addr, r] of rows) {
+    const split = flowSplit(r.claimed, movement.get(addr));
+    if (!split) continue;
+    traced++;
+    for (const g of r.groups) {
+      // multi-group claimants are rare; attribute their whole flow to each listed group's share proportionally is overkill - use first group
+      break;
+    }
+    const g = [...r.groups][0];
+    const a = agg[g] || (agg[g] = { split: [0, 0, 0], claimed: 0 });
+    split.forEach((v, i) => a.split[i] += v);
+    a.claimed += r.claimed;
+  }
+  const groupsWithFlow = [...activeGroups(), 'Foundation LT Treasury', 'Autonomys Labs Treasury'].filter((g) => agg[g]);
+  if (!groupsWithFlow.length) {
+    el.innerHTML = '<div class="empty">Tracing claimant wallets&hellip;</div>';
+    return;
+  }
+  const totalSplit = [0, 0, 0]; let totalClaimed = 0;
+  for (const g of groupsWithFlow) {
+    agg[g].split.forEach((v, i) => totalSplit[i] += v);
+    totalClaimed += agg[g].claimed;
+  }
+  const row = (name, color, split, claimed) => `<div class="flowrow">
+    <div class="fname"><span class="swatch" style="background:${color}"></span>${name}</div>
+    ${barHTML('flowbar', split, claimed)}
+    <div class="ftotal">${fmt(claimed)} AI3</div>
+  </div>`;
+  el.innerHTML =
+    row('All groups', 'var(--text-muted)', totalSplit, totalClaimed) +
+    groupsWithFlow.map((g) => row(g, COLORS[g] || 'var(--g-other)', agg[g].split, agg[g].claimed)).join('');
+  const untraced = rows.length - traced;
+  document.getElementById('flow-desc').textContent =
+    'Per group: claimed tokens still held wrapped (WAI3), unwrapped to native AI3 and held, or moved onward out of the recipient wallet.' +
+    (untraced > 0 ? ` Based on ${traced} of ${rows.length} claimant wallets traced so far.` : '');
+}
+
+function renderClaimants() {
+  const rows = claimantRows();
+  const tbody = document.querySelector('#claimants tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">No claimants yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.slice(0, 100).map(([addr, r]) => {
+    const m = movement.get(addr);
+    let bar = '–', hold1 = '–', hold2 = '–', unw = '–', action = `<button class="mini" data-trace="${addr}">Trace</button>`, sub = '';
+    if (m) {
+      if (m.state === 'loading') action = '<span class="mono">…</span>';
+      else if (m.state === 'error') action = `<button class="mini" data-trace="${addr}">Retry</button>`;
+      else {
+        const split = flowSplit(r.claimed, m);
+        bar = barHTML('minibar', split, r.claimed);
+        hold1 = fmtFull(m.wai3); hold2 = fmtFull(m.native); unw = fmtFull(m.unwrapped);
+        action = `<button class="mini" data-trace="${addr}">Refresh</button>`;
+        if (m.outs.length) {
+          sub = '<div class="sublist">sent: ' + m.outs.map((o) =>
+            `${o.ts.slice(0, 10)} ${fmtFull(o.amount)} → ${short(o.to)}`
+          ).join(' &middot; ') + '</div>';
+        }
+      }
+    }
+    return `<tr>
+      <td>${addrLink(addr)}${sub}</td>
+      <td>${groupTag(r.label.includes('/') ? r.label : r.label)}</td>
+      <td class="num">${fmtFull(r.claimed)}</td>
+      <td>${bar}</td>
+      <td class="num">${hold1}</td>
+      <td class="num">${hold2}</td>
+      <td class="num">${unw}</td>
+      <td>${action}</td>
+    </tr>`;
+  }).join('') + (rows.length > 100 ? `<tr><td colspan="8" class="empty">Showing top 100 of ${rows.length} claimants.</td></tr>` : '');
+}
+document.querySelector('#claimants').addEventListener('click', (e) => {
+  const a = e.target.getAttribute && e.target.getAttribute('data-trace');
+  if (a) { movement.delete(a); loadMovement(a); }
+});
+async function autoTrace() {
+  for (const [addr] of claimantRows()) {
+    if (!movement.has(addr)) {
+      await loadMovement(addr);
+      await new Promise((r) => setTimeout(r, 600));
+    }
+  }
+}
+
+// ---------- chart ----------
+function buildSeries() {
+  const groups = activeGroups();
+  const visPlans = activePlans();
+  const start = TGE;
+  const end = Math.max(...visPlans.map((p) => p.start + p.amount / p.rate)) + 30 * 86400;
+  const step = 14 * 86400;
+  const ts = [];
+  for (let t = start; t <= end; t += step) ts.push(t);
+  ts.push(MILESTONE - 1, MILESTONE + 1); // keep the cliff edge sharp
+  ts.sort((a, b) => a - b);
+  const series = {};
+  for (const g of groups) series[g] = ts.map(() => 0);
+  for (const p of visPlans) {
+    const s = series[p.group];
+    for (let i = 0; i < ts.length; i++) s[i] += accrued(p, ts[i]);
+  }
+  return { ts, series, groups };
+}
+
+let chartState = null;
+function renderChart() {
+  const { ts, series, groups } = buildSeries();
+  const W = 1120, H = 380, mL = 56, mR = 130, mT = 14, mB = 34;
+  const iw = W - mL - mR, ih = H - mT - mB;
+  const t0 = ts[0], t1 = ts[ts.length - 1];
+  const maxY = Math.max(...groups.map((g) => Math.max(...series[g]))) * 1.06;
+  const x = (t) => mL + iw * (t - t0) / (t1 - t0);
+  const y = (v) => mT + ih * (1 - v / maxY);
+  const now = Date.now() / 1000;
+
+  let svg = '';
+  const stepY = maxY > 150e6 ? 50e6 : 25e6;
+  for (let v = 0; v <= maxY; v += stepY) {
+    svg += `<line x1="${mL}" y1="${y(v)}" x2="${W - mR}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/>`;
+    svg += `<text x="${mL - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--text-muted)" font-variant-numeric="tabular-nums">${v === 0 ? '0' : fmt(v, 0)}</text>`;
+  }
+  for (let d = new Date(Date.UTC(2025, 6, 16)); d.getTime() / 1000 <= t1; d.setUTCMonth(d.getUTCMonth() + 6)) {
+    const t = d.getTime() / 1000;
+    svg += `<text x="${x(t)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="var(--text-muted)">${d.toISOString().slice(0, 7)}</text>`;
+  }
+  svg += `<line x1="${mL}" y1="${y(0)}" x2="${W - mR}" y2="${y(0)}" stroke="var(--baseline)" stroke-width="1"/>`;
+  svg += `<line x1="${x(MILESTONE)}" y1="${mT}" x2="${x(MILESTONE)}" y2="${y(0)}" stroke="var(--baseline)" stroke-width="1"/>`;
+  svg += `<text x="${x(MILESTONE) + 5}" y="${mT + 12}" font-size="11" fill="var(--text-secondary)">12-mo milestone</text>`;
+  if (now > t0 && now < t1) {
+    svg += `<line x1="${x(now)}" y1="${mT}" x2="${x(now)}" y2="${y(0)}" stroke="var(--text-muted)" stroke-width="1"/>`;
+    svg += `<text x="${x(now) - 5}" y="${mT + 12}" text-anchor="end" font-size="11" fill="var(--text-secondary)">today</text>`;
+  }
+  for (const g of groups) {
+    const pts = ts.map((t, i) => `${x(t).toFixed(1)},${y(series[g][i]).toFixed(1)}`).join(' ');
+    svg += `<polyline points="${pts}" fill="none" stroke="${COLORS[g]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  // end dots + collision-resolved labels (leader line when a label is nudged)
+  const labels = groups.map((g) => {
+    const endV = series[g][series[g].length - 1];
+    return { g, endV, yDot: y(endV), yLab: y(endV) };
+  }).sort((a, b) => a.yLab - b.yLab);
+  const GAP = 15;
+  for (let i = 1; i < labels.length; i++) {
+    if (labels[i].yLab - labels[i - 1].yLab < GAP) labels[i].yLab = labels[i - 1].yLab + GAP;
+  }
+  for (const l of labels) {
+    if (Math.abs(l.yLab - l.yDot) > 4) {
+      svg += `<line x1="${x(t1) + 5}" y1="${l.yDot}" x2="${x(t1) + 14}" y2="${l.yLab}" stroke="var(--baseline)" stroke-width="1"/>`;
+    }
+    svg += `<circle cx="${x(t1)}" cy="${l.yDot}" r="4" fill="${COLORS[l.g]}" stroke="var(--surface-1)" stroke-width="2"/>`;
+    svg += `<text x="${x(t1) + 17}" y="${l.yLab + 4}" font-size="11.5" fill="var(--text-primary)">${l.g} ${fmt(l.endV, 0)}</text>`;
+  }
+  document.getElementById('chart').innerHTML = svg;
+  document.getElementById('chart-legend').innerHTML = groups.map((g) =>
+    `<span><i style="background:${COLORS[g]}"></i>${g}</span>`).join('');
+  chartState = { ts, series, groups, t0, t1, mL, iw, W };
+}
+
+(function wireTooltip() {
+  const svgEl = document.getElementById('chart');
+  const tip = document.getElementById('tooltip');
+  svgEl.addEventListener('mousemove', (e) => {
+    if (!chartState) return;
+    const { ts, series, groups, t0, t1, mL, iw, W } = chartState;
+    const rect = svgEl.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width * W;
+    if (relX < mL || relX > mL + iw) { tip.style.display = 'none'; return; }
+    const t = t0 + (relX - mL) / iw * (t1 - t0);
+    let i = ts.findIndex((v) => v >= t);
+    if (i < 0) i = ts.length - 1;
+    const d = new Date(ts[i] * 1000).toISOString().slice(0, 10);
+    tip.innerHTML = `<div class="tt-date">${d}</div>` + groups.map((g) =>
+      `<div class="tt-row"><span class="n"><i style="background:${COLORS[g]}"></i>${g}</span><span class="a">${fmt(series[g][i], 2)}</span></div>`
+    ).join('');
+    tip.style.display = 'block';
+    const wrapRect = document.getElementById('chart-wrap').getBoundingClientRect();
+    let left = e.clientX - wrapRect.left + 14;
+    if (left + 180 > wrapRect.width) left -= 200;
+    tip.style.left = left + 'px';
+    tip.style.top = (e.clientY - wrapRect.top + 10) + 'px';
+  });
+  svgEl.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+})();
+
+// ---------- footnotes ----------
+const ambassadorCreators = [...new Set((R.groups.Ambassadors.plans || []).map((p) => p.creator))];
+document.getElementById('footnotes').innerHTML = `
+  Plans indexed from PlanCreated events on the shared Hedgey contracts
+  (<a href="${EXPLORER}/address/${R.lockers.lockup}" target="_blank" rel="noopener">TokenLockupPlans</a>,
+  <a href="${EXPLORER}/address/${R.lockers.vesting}" target="_blank" rel="noopener">TokenVestingPlans</a>, token WAI3) and attributed by creating wallet
+  per the <a href="https://forum.autonomys.xyz/t/subspace-foundation-autonomys-labs-wallets-official-addresses-for-transparency/4917" target="_blank" rel="noopener">official wallets post</a>.
+  Ambassador plans are those created outside the official admin set (creators: ${ambassadorCreators.map(short).join(', ')} - the first is the ambassador program Safe).
+  Registry snapshot: ${R.generatedAt.slice(0, 16).replace('T', ' ')} UTC (re-run <span class="mono">node scripts/build-registry.mjs</span> to pick up newly created plans).
+  Claims are counted from PlanRedeemed/PlanRevoked events filtered to tracked plan IDs; revocation rows show the vested payout, with the unvested remainder returned to the program admin and removed from the group total.
+  "Unwrapped &amp; held" is capped by the wallet's current native balance, so tokens unwrapped and then moved on count as moved onward. If a plan NFT is transferred, claims still show under the original recipient.
+  Treasury wallet balances are Auto EVM only; consensus-chain holdings are not shown.
+`;
+
+// ---------- boot / refresh loop ----------
+let refreshCount = 0;
+async function refresh() {
+  const st = document.getElementById('refresh-status');
+  try {
+    await refreshClaims();
+    renderKPIs();
+    renderFeed();
+    renderClaimants();
+    renderFlow();
+    if (refreshCount % 4 === 0) refreshTreasuryWallets(); // every ~3 min
+    refreshCount++;
+    st.textContent = 'updated ' + new Date().toISOString().slice(11, 19) + ' UTC';
+    autoTrace();
+  } catch (e) {
+    st.textContent = 'refresh failed, retrying';
+  }
+}
+const ambToggle = document.getElementById('amb-toggle');
+ambToggle.checked = showAmbassadors;
+ambToggle.addEventListener('change', () => {
+  showAmbassadors = ambToggle.checked;
+  localStorage.setItem('showAmbassadors', showAmbassadors ? '1' : '0');
+  renderKPIs();
+  renderChart();
+  renderFeed();
+  renderClaimants();
+  renderFlow();
+  autoTrace();
+});
+
+renderKPIs();
+renderChart();
+renderCountdown();
+setInterval(renderCountdown, 1000);
+setInterval(() => { renderKPIs(); }, 60000);
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+</body>
+</html>
