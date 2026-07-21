@@ -24,7 +24,9 @@
     --g-other: #898781;
     --flow-wrapped: #2a78d6;
     --flow-unwrapped: #1baf7a;
-    --flow-moved: #eb6834;
+    --flow-xdm: #4a3aa7;
+    --flow-bridge: #eb6834;
+    --flow-other: #898781;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -45,7 +47,9 @@
       --g-ambassadors: #9085e9;
       --flow-wrapped: #3987e5;
       --flow-unwrapped: #199e70;
-      --flow-moved: #d95926;
+      --flow-xdm: #9085e9;
+      --flow-bridge: #d95926;
+      --flow-other: #898781;
     }
   }
   * { box-sizing: border-box; }
@@ -217,12 +221,14 @@
 
   <section>
     <h2>Where claimed tokens went</h2>
-    <p class="desc" id="flow-desc">Per group: claimed tokens still held wrapped (WAI3), unwrapped to native AI3 and held, or moved onward out of the recipient wallet.</p>
+    <p class="desc" id="flow-desc">Where claimed tokens are now: held as WAI3, unwrapped to native AI3 and held, XDM&rsquo;d to the consensus chain, bridged to another network, or otherwise moved on. Measured live per recipient wallet.</p>
     <div class="panel">
       <div class="legend">
         <span><i class="sq" style="background:var(--flow-wrapped)"></i>Held as WAI3</span>
         <span><i class="sq" style="background:var(--flow-unwrapped)"></i>Unwrapped &amp; held</span>
-        <span><i class="sq" style="background:var(--flow-moved)"></i>Moved onward</span>
+        <span><i class="sq" style="background:var(--flow-xdm)"></i>XDM&rsquo;d to consensus</span>
+        <span><i class="sq" style="background:var(--flow-bridge)"></i>Bridged</span>
+        <span><i class="sq" style="background:var(--flow-other)"></i>Other / on-EVM</span>
       </div>
       <div id="flow-bars"><div class="empty">No claims yet.</div></div>
     </div>
@@ -234,9 +240,9 @@
     <div class="panel" style="padding:0">
       <table id="claimants">
         <thead><tr>
-          <th>Recipient</th><th>Group</th><th class="num">Claimed (AI3)</th><th>Flow</th><th class="num">Holds WAI3</th><th class="num">Holds AI3</th><th class="num">Unwrapped</th><th></th>
+          <th>Recipient</th><th>Group</th><th class="num">Claimed (AI3)</th><th>Flow</th><th class="num">Holds WAI3</th><th class="num">Holds AI3</th><th class="num">XDM&rsquo;d</th><th class="num">Bridged</th><th></th>
         </tr></thead>
-        <tbody><tr><td colspan="8" class="empty">No claimants yet.</td></tr></tbody>
+        <tbody><tr><td colspan="9" class="empty">No claimants yet.</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -251,6 +257,16 @@ const BASE = 'https://explorer.auto-evm.mainnet.autonomys.xyz/api/v2';
 const EXPLORER = 'https://explorer.auto-evm.mainnet.autonomys.xyz';
 const WAI3 = '0x7ba06C7374566c68495f7e4690093521F6B991bb';
 const ZERO = '0x0000000000000000000000000000000000000000';
+// Public Autonomys XDM indexer: Auto EVM -> consensus transfers are substrate extrinsics
+// invisible to the EVM explorer, so we read them from here (browser-callable; CORS reflects origin).
+const XDM_INDEXER = 'https://indexer-api.mainnet.autonomys.xyz/v1/xdm';
+// Hyperlane EvmHypNative routers on Auto EVM. Bridging is on native AI3, so native AI3 sent
+// to one of these is bridged to that destination network.
+const BRIDGE_ROUTERS = {
+  '0x38ed676d20c9b026a2372d3a88a0bcee54de3851': 'Ethereum',
+  '0x0cebaef23ba9de31444c0623bd47f3df7fb88ed2': 'BSC',
+  '0x095023fb8f85c96c766e8e00927e6db6316ee9eb': 'Solana',
+};
 const MILESTONE = 1784203200; // 2026-07-16 12:00 UTC
 const TGE = 1752667200;       // 2025-07-16 12:00 UTC
 const REFRESH_MS = 45000;
@@ -569,11 +585,46 @@ async function loadMovement(recipient) {
       if (to === ZERO || to === WAI3.toLowerCase()) unwrapped += amt;
       else { sentOn += amt; outs.push({ ts: t.timestamp, to, amount: amt }); }
     }
+    // Bridged (request 3): Hyperlane transferRemote to a router, tallied by destination network.
+    // Uses the decoded _amountOrId (the bridged amount) rather than msg.value, which can also
+    // carry an interchain-gas payment.
+    const bridged = { total: 0 };
+    let txParams = { filter: 'from' };
+    for (let page = 0; page < 5; page++) {
+      const txs = await api(`/addresses/${recipient}/transactions`, txParams);
+      for (const t of (txs.items || [])) {
+        const dest = BRIDGE_ROUTERS[((t.to || {}).hash || '').toLowerCase()];
+        if (!dest || t.status !== 'ok' || t.method !== 'transferRemote') continue;
+        let raw = t.value;
+        for (const p of ((t.decoded_input || {}).parameters || [])) {
+          if (p.name === '_amountOrId') raw = p.value;
+        }
+        const amt = Number(raw) / 1e18;
+        bridged[dest] = (bridged[dest] || 0) + amt;
+        bridged.total += amt;
+      }
+      if (!txs.next_page_params) break;
+      txParams = { filter: 'from', ...txs.next_page_params };
+    }
+    // XDM'd to consensus (request 1): read from the public XDM indexer. amount is already in AI3.
+    let xdm = 0, xdmCount = 0, xdmPending = 0;
+    try {
+      const res = await fetch(`${XDM_INDEXER}/transfers/${recipient}`);
+      if (res.ok) {
+        for (const t of await res.json()) {
+          if (t.dst_chain === 'Consensus' && (t.sender || '').toLowerCase() === recipient && t.transfer_successful !== false) {
+            xdm += Number(t.amount) || 0;
+            xdmCount++;
+            if (!t.executed_dst_block) xdmPending++;
+          }
+        }
+      }
+    } catch (e) { /* indexer unavailable - degrade to 0 without failing the row */ }
     movement.set(recipient, {
       state: 'done',
       native: Number(info.coin_balance || 0) / 1e18,
       wai3: wai3 ? Number(wai3.value) / 1e18 : 0,
-      unwrapped, sentOn,
+      unwrapped, sentOn, bridged, xdm, xdmCount, xdmPending,
       outs: outs.slice(0, 4),
     });
   } catch (e) {
@@ -583,13 +634,17 @@ async function loadMovement(recipient) {
   renderFlow();
 }
 
-// split a claimant's claimed amount into [held wrapped, unwrapped & held, moved onward]
+// split claimed into [held wrapped, unwrapped & held, XDM'd to consensus, bridged, other moved]
 function flowSplit(claimed, m) {
   if (!m || m.state !== 'done' || claimed <= 0) return null;
   const heldWrapped = Math.min(m.wai3, claimed);
   const unwrappedHeld = Math.min(m.native, m.unwrapped, claimed - heldWrapped);
   const moved = Math.max(0, claimed - heldWrapped - unwrappedHeld);
-  return [heldWrapped, unwrappedHeld, moved];
+  // attribute the moved portion to known destinations, clamped so segments never exceed what moved
+  const xdm = Math.min(m.xdm || 0, moved);
+  const bridged = Math.min((m.bridged && m.bridged.total) || 0, moved - xdm);
+  const other = moved - xdm - bridged;
+  return [heldWrapped, unwrappedHeld, xdm, bridged, other];
 }
 
 function claimantRows() {
@@ -607,7 +662,7 @@ function claimantRows() {
   return [...byR.entries()].sort((a, b) => b[1].claimed - a[1].claimed);
 }
 
-const FLOW_COLORS = ['var(--flow-wrapped)', 'var(--flow-unwrapped)', 'var(--flow-moved)'];
+const FLOW_COLORS = ['var(--flow-wrapped)', 'var(--flow-unwrapped)', 'var(--flow-xdm)', 'var(--flow-bridge)', 'var(--flow-other)'];
 function barHTML(cls, split, total) {
   if (!split || total <= 0) return `<span class="${cls}"></span>`;
   const segs = split.map((v, i) =>
@@ -631,7 +686,7 @@ function renderFlow() {
       break;
     }
     const g = [...r.groups][0];
-    const a = agg[g] || (agg[g] = { split: [0, 0, 0], claimed: 0 });
+    const a = agg[g] || (agg[g] = { split: [0, 0, 0, 0, 0], claimed: 0 });
     split.forEach((v, i) => a.split[i] += v);
     a.claimed += r.claimed;
   }
@@ -640,7 +695,7 @@ function renderFlow() {
     el.innerHTML = '<div class="empty">Tracing claimant wallets&hellip;</div>';
     return;
   }
-  const totalSplit = [0, 0, 0]; let totalClaimed = 0;
+  const totalSplit = [0, 0, 0, 0, 0]; let totalClaimed = 0;
   for (const g of groupsWithFlow) {
     agg[g].split.forEach((v, i) => totalSplit[i] += v);
     totalClaimed += agg[g].claimed;
@@ -655,46 +710,51 @@ function renderFlow() {
     groupsWithFlow.map((g) => row(g, COLORS[g] || 'var(--g-other)', agg[g].split, agg[g].claimed)).join('');
   const untraced = rows.length - traced;
   document.getElementById('flow-desc').textContent =
-    'Per group: claimed tokens still held wrapped (WAI3), unwrapped to native AI3 and held, or moved onward out of the recipient wallet.' +
-    (untraced > 0 ? ` Based on ${traced} of ${rows.length} claimant wallets traced so far.` : '');
+    'Where claimed tokens are now: held as WAI3, unwrapped to native AI3 and held, XDM’d to the consensus chain, bridged to another network, or otherwise moved on. Measured live per recipient wallet.' +
+    (untraced > 0 ? ` ${traced} of ${rows.length} claimant wallets traced so far.` : '');
 }
 
 function renderClaimants() {
   const rows = claimantRows();
   const tbody = document.querySelector('#claimants tbody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty">No claimants yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">No claimants yet.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.slice(0, 100).map(([addr, r]) => {
     const m = movement.get(addr);
-    let bar = '–', hold1 = '–', hold2 = '–', unw = '–', action = `<button class="mini" data-trace="${addr}">Trace</button>`, sub = '';
+    let bar = '–', hold1 = '–', hold2 = '–', xdmC = '–', brC = '–', action = `<button class="mini" data-trace="${addr}">Trace</button>`, sub = '';
     if (m) {
       if (m.state === 'loading') action = '<span class="mono">…</span>';
       else if (m.state === 'error') action = `<button class="mini" data-trace="${addr}">Retry</button>`;
       else {
         const split = flowSplit(r.claimed, m);
         bar = barHTML('minibar', split, r.claimed);
-        hold1 = fmtFull(m.wai3); hold2 = fmtFull(m.native); unw = fmtFull(m.unwrapped);
+        hold1 = fmtFull(m.wai3); hold2 = fmtFull(m.native);
+        xdmC = m.xdm ? fmtFull(m.xdm) : '0';
+        brC = (m.bridged && m.bridged.total) ? fmtFull(m.bridged.total) : '0';
         action = `<button class="mini" data-trace="${addr}">Refresh</button>`;
-        if (m.outs.length) {
-          sub = '<div class="sublist">sent: ' + m.outs.map((o) =>
-            `${o.ts.slice(0, 10)} ${fmtFull(o.amount)} → ${short(o.to)}`
-          ).join(' &middot; ') + '</div>';
+        const bits = [];
+        if (m.xdmCount) bits.push(`${m.xdmCount} XDM to consensus${m.xdmPending ? ` (${m.xdmPending} pending)` : ''}`);
+        if (m.bridged && m.bridged.total) {
+          bits.push('bridged: ' + Object.keys(m.bridged).filter((k) => k !== 'total')
+            .map((k) => `${fmtFull(m.bridged[k])} ${k}`).join(', '));
         }
+        if (bits.length) sub = `<div class="sublist">${bits.join(' &middot; ')}</div>`;
       }
     }
     return `<tr>
       <td>${addrLink(addr)}${sub}</td>
-      <td>${groupTag(r.label.includes('/') ? r.label : r.label)}</td>
+      <td>${groupTag(r.label)}</td>
       <td class="num">${fmtFull(r.claimed)}</td>
       <td>${bar}</td>
       <td class="num">${hold1}</td>
       <td class="num">${hold2}</td>
-      <td class="num">${unw}</td>
+      <td class="num">${xdmC}</td>
+      <td class="num">${brC}</td>
       <td>${action}</td>
     </tr>`;
-  }).join('') + (rows.length > 100 ? `<tr><td colspan="8" class="empty">Showing top 100 of ${rows.length} claimants.</td></tr>` : '');
+  }).join('') + (rows.length > 100 ? `<tr><td colspan="9" class="empty">Showing top 100 of ${rows.length} claimants.</td></tr>` : '');
 }
 document.querySelector('#claimants').addEventListener('click', (e) => {
   const a = e.target.getAttribute && e.target.getAttribute('data-trace');
@@ -820,6 +880,7 @@ document.getElementById('footnotes').innerHTML = `
   Registry snapshot: ${R.generatedAt.slice(0, 16).replace('T', ' ')} UTC (re-run <span class="mono">node scripts/build-registry.mjs</span> to pick up newly created plans).
   Claims are counted from PlanRedeemed/PlanRevoked events filtered to tracked plan IDs; revocation rows show the vested payout, with the unvested remainder returned to the program admin and removed from the group total.
   "Unwrapped &amp; held" is capped by the wallet's current native balance, so tokens unwrapped and then moved on count as moved onward. If a plan NFT is transferred, claims still show under the original recipient.
+  "XDM&rsquo;d to consensus" is read live from the Autonomys XDM indexer (Auto EVM&rarr;consensus transfers are substrate messages the EVM explorer can't see); "Bridged" counts native AI3 sent to the Hyperlane routers on Auto EVM (Ethereum, BSC, Solana). Both are attributed to the beneficiary wallet directly &mdash; tokens routed through an intermediate wallet before an XDM or bridge fall under "other moved". Whether tokens sent to consensus were then staked is a planned follow-up.
 `;
 
 // ---------- boot / refresh loop ----------
