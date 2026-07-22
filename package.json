@@ -1,0 +1,15 @@
+{
+  "name": "autonomys-unlock-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Build scripts for the AI3 unlock tracker dashboard. The dashboard (index.html) itself has no dependencies; these are only used by the data-refresh scripts.",
+  "scripts": {
+    "build:registry": "node scripts/build-registry.mjs",
+    "build:staking": "node scripts/build-staking.mjs"
+  },
+  "dependencies": {
+    "@autonomys/auto-consensus": "1.6.14",
+    "@autonomys/auto-utils": "1.6.14"
+  }
+}

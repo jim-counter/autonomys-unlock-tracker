@@ -16,11 +16,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm ci
       - run: node scripts/build-registry.mjs
-      - name: Commit updated registry
+      # Staking reads the consensus RPC via polkadot.js; if it hiccups, don't block the
+      # registry refresh - the previous data/staking.js stays in place.
+      - run: node scripts/build-staking.mjs
+        continue-on-error: true
+      - name: Commit refreshed data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/registry.json data/registry.js
-          git diff --cached --quiet || git commit -m "Refresh plan registry"
+          git add data/registry.json data/registry.js data/staking.json data/staking.js
+          git diff --cached --quiet || git commit -m "Refresh plan registry and staking data"
           git push
