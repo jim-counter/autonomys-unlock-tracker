@@ -39,6 +39,31 @@ unwrapped & held, XDM'd to consensus (split into staked / on-consensus), bridged
 Attribution is per beneficiary wallet; multi-hop routing and CEX deposits fall under
 "other". XDM and bridge are read live in the browser; staking is snapshotted daily.
 
+## Wallet tags (private annotations)
+
+You can label any wallet address with your own text; the label then replaces the address
+everywhere it appears, with the full address kept as the hover tooltip and the explorer
+link unchanged. Tags are treated as sensitive:
+
+- **Off by default.** The eye control in the header starts closed on every page load. Until
+  you open it, nothing is decrypted, nothing is rendered, and you are never prompted.
+- **Encrypted at rest.** Only ciphertext reaches `localStorage` (AES-GCM 256, key derived
+  from your passphrase with PBKDF2-SHA256, 600k iterations, fresh IV per write). This
+  matters because GitHub Pages project sites share one origin, so any other Pages site on
+  the same account could otherwise read plaintext out of this dashboard's storage.
+- **Key in memory only.** Never written to local or session storage; it dies with the tab.
+  "Lock now" discards it immediately.
+- **Never transmitted.** Tags are used only for rendering. They never enter a URL, request,
+  or export - there is deliberately no export/backup path.
+- **No residue when closed.** Closing the eye scrubs the tag text from the DOM rather than
+  just hiding it, so devtools or an extension can't read it afterwards.
+- **Escaped on output.** Labels are HTML-escaped, so tag text can never execute as markup.
+
+Tag from the pencil beside any address, or manage everything (including "Delete all tags")
+in the Wallet tags panel that appears while the eye is open. Passphrase loss is
+unrecoverable by design. Requires a secure context, so tagging is unavailable when opening
+`index.html` directly from disk - use the local server or the hosted site.
+
 ## Usage
 
 ```sh

@@ -144,6 +144,39 @@
   .minibar { display: inline-flex; width: 90px; height: 10px; border-radius: 3px; overflow: hidden; background: var(--grid); vertical-align: middle; }
   .minibar .seg { height: 100%; }
   .minibar .seg + .seg { border-left: 2px solid var(--surface-1); }
+
+  /* wallet tags: private annotations, encrypted at rest, never leave the browser */
+  .eyebtn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12.5px;
+    color: var(--text-secondary); background: none; border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+  .eyebtn:hover:not(:disabled) { color: var(--text-primary); border-color: var(--baseline); }
+  .eyebtn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .eyebtn.on { color: var(--flow-staked); border-color: var(--flow-staked); }
+  .eyebtn svg { width: 15px; height: 15px; flex: none; }
+  .atag { text-decoration: underline; text-decoration-style: dotted;
+    text-decoration-color: var(--baseline); text-underline-offset: 2px; }
+  .tagbtn { font: inherit; font-size: 11px; line-height: 1; color: var(--text-muted);
+    background: none; border: 1px solid var(--border); border-radius: 5px;
+    padding: 2px 5px; margin-left: 6px; cursor: pointer; }
+  .tagbtn:hover { color: var(--text-primary); border-color: var(--baseline); }
+  .tagsline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 10px; font-size: 12.5px; color: var(--text-secondary); }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50;
+    display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal[hidden] { display: none; }
+  .modal .box { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px; width: 100%; max-width: 390px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+  .modal h3 { margin: 0 0 6px; font-size: 15px; font-weight: 650; }
+  .modal p { margin: 0 0 12px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .modal input { width: 100%; font: inherit; font-size: 13px; padding: 7px 9px; margin-bottom: 8px;
+    background: var(--page); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; }
+  .modal .err { color: #d03b3b; font-size: 12px; margin: 0 0 8px; min-height: 1em; }
+  .modal .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .modal .row button { font: inherit; font-size: 12.5px; padding: 5px 12px; border-radius: 6px;
+    cursor: pointer; border: 1px solid var(--border); background: none; color: var(--text-secondary); }
+  .modal .row button:hover { color: var(--text-primary); border-color: var(--baseline); }
+  .modal .row button.primary { border-color: var(--flow-wrapped); color: var(--flow-wrapped); }
+  .modal .row button[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -154,6 +187,7 @@
     <label class="toggle" title="Ambassador program grants are small monthly plans that predate the milestone; hidden by default to keep the milestone view clean.">
       <input type="checkbox" id="amb-toggle"><span class="tr"></span>Show ambassadors
     </label>
+    <button class="eyebtn" id="tag-eye" type="button" aria-pressed="false"></button>
     <div class="status"><span class="dot"></span><span id="refresh-status">loading&hellip;</span></div>
   </header>
 
@@ -250,7 +284,53 @@
     </div>
   </section>
 
+  <section id="tags-section" hidden>
+    <h2>Wallet tags</h2>
+    <p class="desc">Your private labels for wallet addresses. Encrypted with your passphrase and stored in this browser only &mdash; never sent anywhere, never written to a file, and hidden everywhere the moment you close the eye.</p>
+    <div class="panel">
+      <div class="tagsline">
+        <span id="tags-count"></span>
+        <button class="mini" id="tags-lock" type="button">Lock now</button>
+        <button class="mini" id="tags-wipe" type="button">Delete all tags</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="tags-table">
+          <thead><tr><th>Tag</th><th>Address</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <div class="foot" id="footnotes"></div>
+</div>
+
+<div class="modal" id="pass-modal" hidden>
+  <div class="box">
+    <h3 id="pass-title">Unlock wallet tags</h3>
+    <p id="pass-desc"></p>
+    <input type="password" id="pass-1" placeholder="Passphrase" autocomplete="off" spellcheck="false" autocapitalize="none">
+    <input type="password" id="pass-2" placeholder="Confirm passphrase" autocomplete="off" spellcheck="false" autocapitalize="none" hidden>
+    <p class="err" id="pass-err"></p>
+    <div class="row">
+      <button id="pass-cancel" type="button">Cancel</button>
+      <button class="primary" id="pass-ok" type="button">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="tag-modal" hidden>
+  <div class="box">
+    <h3>Tag wallet</h3>
+    <p class="mono" id="tag-addr"></p>
+    <input type="text" id="tag-input" placeholder="Label for this wallet" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="80">
+    <p class="err" id="tag-err"></p>
+    <div class="row">
+      <button id="tag-remove" type="button">Remove</button>
+      <button id="tag-cancel" type="button">Cancel</button>
+      <button class="primary" id="tag-ok" type="button">Save</button>
+    </div>
+  </div>
 </div>
 
 <script src="data/registry.js"></script>
@@ -327,6 +407,67 @@ function accrued(p, t) {
   return Math.min(p.amount, p.rate * (t - p.start));
 }
 
+// ---------- wallet tags (private, encrypted at rest, never transmitted) ----------
+// Tags are arbitrary user text mapped to addresses. They are considered sensitive, so:
+//  - only ciphertext is ever written to localStorage (AES-GCM 256, PBKDF2-SHA256 key)
+//  - the key lives in this variable only, never in local/sessionStorage, and dies with the tab
+//  - tags are used for rendering only: they never appear in a URL, fetch, or any request
+//  - nothing renders and nothing is prompted for until the user opens the eye (off by default)
+//  - all tag text is HTML-escaped on output, since labels are injected via innerHTML
+const TAG_STORE = 'walletTags.v1';
+const PBKDF2_ITERS = 600000;
+let tagKey = null;   // CryptoKey, memory only
+let tagSalt = null;  // Uint8Array, must match the salt the key was derived from
+let tags = {};       // addr(lowercase) -> label, only populated while unlocked
+let tagsOn = false;  // eye state; always starts closed, never persisted
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cryptoOK = () => !!(window.crypto && window.crypto.subtle);
+const hasTagStore = () => !!localStorage.getItem(TAG_STORE);
+const b64enc = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const b64dec = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+async function deriveTagKey(passphrase, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERS, hash: 'SHA-256' },
+    base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+async function saveTags() {
+  const iv = crypto.getRandomValues(new Uint8Array(12)); // fresh IV every write; never reused under one key
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, tagKey, new TextEncoder().encode(JSON.stringify(tags))
+  );
+  localStorage.setItem(TAG_STORE, JSON.stringify({
+    v: 1, salt: b64enc(tagSalt), iv: b64enc(iv), ct: b64enc(ct),
+  }));
+}
+async function createTagStore(passphrase) {
+  tagSalt = crypto.getRandomValues(new Uint8Array(16));
+  tagKey = await deriveTagKey(passphrase, tagSalt);
+  tags = {};
+  await saveTags();
+}
+// Throws on a wrong passphrase: AES-GCM authentication fails, so there is nothing to guess against.
+async function unlockTags(passphrase) {
+  const store = JSON.parse(localStorage.getItem(TAG_STORE));
+  const salt = b64dec(store.salt);
+  const key = await deriveTagKey(passphrase, salt);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64dec(store.iv) }, key, b64dec(store.ct));
+  tags = JSON.parse(new TextDecoder().decode(pt));
+  tagKey = key;
+  tagSalt = salt;
+}
+function lockTags() {
+  tagKey = null; tagSalt = null; tags = {}; tagsOn = false;
+  syncEyeButton();
+  rerenderAddresses();
+}
+// null unless unlocked AND the eye is open, so a closed eye can't render a label anywhere
+const labelFor = (a) => (tagsOn && tagKey) ? (tags[String(a).toLowerCase()] || null) : null;
+
 // ---------- formatting ----------
 const fmt = (n, d = 1) => {
   if (n >= 1e6) return (n / 1e6).toFixed(d) + 'M';
@@ -335,7 +476,19 @@ const fmt = (n, d = 1) => {
 };
 const fmtFull = (n) => Math.round(n).toLocaleString('en-US');
 const short = (a) => a.slice(0, 6) + '…' + a.slice(-4);
-const addrLink = (a) => `<a class="mono" href="${EXPLORER}/address/${a}" target="_blank" rel="noopener">${short(a)}</a>`;
+// Shows the tag in place of the address when one exists, keeps the explorer link, and always
+// carries the full address as the native tooltip. The pencil only exists in annotation mode.
+const addrLink = (a) => {
+  const label = labelFor(a);
+  const link = `<a class="${label ? 'atag' : 'mono'}" href="${EXPLORER}/address/${a}"`
+    + ` target="_blank" rel="noopener noreferrer" title="${a}">${label ? esc(label) : short(a)}</a>`;
+  return link + (tagsOn && tagKey ? `<button class="tagbtn" type="button" data-tagaddr="${a}" title="Add or edit tag">&#9998;</button>` : '');
+};
+// Non-link form, for prose where an address is mentioned inline
+const addrText = (a) => {
+  const label = labelFor(a);
+  return label ? `<span class="atag" title="${a}">${esc(label)}</span>` : short(a);
+};
 const groupTag = (g) => `<span class="tag"><span class="swatch" style="background:${COLORS[g] || 'var(--g-other)'}"></span>${g}</span>`;
 
 // ---------- API ----------
@@ -558,7 +711,13 @@ async function refreshTreasuryWallets() {
       rows.push({ ...w, native: null, wai3: null });
     }
   }
-  document.querySelector('#treasury-wallets tbody').innerHTML = rows.map((r) => `<tr>
+  treasuryWalletRows = rows;
+  renderTreasuryWallets();
+}
+let treasuryWalletRows = null;
+function renderTreasuryWallets() {
+  if (!treasuryWalletRows) return; // not fetched yet; leave the loading row in place
+  document.querySelector('#treasury-wallets tbody').innerHTML = treasuryWalletRows.map((r) => `<tr>
     <td>${r.name}</td>
     <td>${addrLink(r.address)}</td>
     <td class="num">${r.native === null ? '–' : fmtFull(r.native)}</td>
@@ -892,17 +1051,200 @@ function renderChart() {
 
 // ---------- footnotes ----------
 const ambassadorCreators = [...new Set((R.groups.Ambassadors.plans || []).map((p) => p.creator))];
+function renderFootnotes() {
 document.getElementById('footnotes').innerHTML = `
   Plans indexed from PlanCreated events on the shared Hedgey contracts
   (<a href="${EXPLORER}/address/${R.lockers.lockup}" target="_blank" rel="noopener">TokenLockupPlans</a>,
   <a href="${EXPLORER}/address/${R.lockers.vesting}" target="_blank" rel="noopener">TokenVestingPlans</a>, token WAI3) and attributed by creating wallet
   per the <a href="https://forum.autonomys.xyz/t/subspace-foundation-autonomys-labs-wallets-official-addresses-for-transparency/4917" target="_blank" rel="noopener">official wallets post</a>.
-  Ambassador plans are those created outside the official admin set by the ambassador program Safe (${ambassadorCreators.map(short).join(', ')}). Plans under 100 AI3 are excluded as test grants.
+  Ambassador plans are those created outside the official admin set by the ambassador program Safe (${ambassadorCreators.map(addrText).join(', ')}). Plans under 100 AI3 are excluded as test grants.
   Registry snapshot: ${R.generatedAt.slice(0, 16).replace('T', ' ')} UTC (re-run <span class="mono">node scripts/build-registry.mjs</span> to pick up newly created plans).
   Claims are counted from PlanRedeemed/PlanRevoked events filtered to tracked plan IDs; revocation rows show the vested payout, with the unvested remainder returned to the program admin and removed from the group total.
   "Unwrapped &amp; held" is capped by the wallet's current native balance, so tokens unwrapped and then moved on count as moved onward. If a plan NFT is transferred, claims still show under the original recipient.
   "XDM&rsquo;d to consensus" is read live from the Autonomys XDM indexer (Auto EVM&rarr;consensus transfers are substrate messages the EVM explorer can't see); "Bridged" counts native AI3 sent to the Hyperlane routers on Auto EVM (Ethereum, BSC, Solana). Both are attributed to the beneficiary wallet directly &mdash; tokens routed through an intermediate wallet before an XDM or bridge fall under "other moved". "Staked" is the portion of XDM&rsquo;d tokens whose consensus receiving account has an active nomination in the domains staking pallet, capped at the amount sent to that account (staking funds are fungible); it is snapshotted daily by <span class="mono">node scripts/build-staking.mjs</span> since the consensus chain isn't queryable from the browser.
 `;
+}
+renderFootnotes();
+
+// ---------- wallet tag UI ----------
+const ICON_EYE_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.6 12S5.2 5.6 12 5.6 22.4 12 22.4 12 18.8 18.4 12 18.4 1.6 12 1.6 12Z"/><circle cx="12" cy="12" r="3.1"/></svg>';
+const ICON_EYE_CLOSED = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.6l18 16.8"/><path d="M1.6 12S5.2 5.6 12 5.6c2 0 3.7.55 5.1 1.35"/><path d="M22.4 12S18.8 18.4 12 18.4c-2 0-3.7-.55-5.1-1.35"/></svg>';
+
+function syncEyeButton() {
+  const b = document.getElementById('tag-eye');
+  const on = tagsOn && !!tagKey;
+  b.innerHTML = (on ? ICON_EYE_OPEN : ICON_EYE_CLOSED) + `<span>${on ? 'Tags on' : 'Tags off'}</span>`;
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  if (!b.disabled) {
+    b.title = on
+      ? 'Hide wallet tags'
+      : 'Show your private wallet tags (encrypted in this browser only)';
+  }
+}
+
+// Every surface that can display an address or tag, re-rendered from data already in memory
+function rerenderAddresses() {
+  renderKPIs();
+  renderFeed();
+  renderClaimants();
+  renderTreasuryWallets();
+  renderFootnotes();
+  renderTagsPanel();
+}
+
+function renderTagsPanel() {
+  const sec = document.getElementById('tags-section');
+  const tbody = document.querySelector('#tags-table tbody');
+  const visible = !!tagKey && tagsOn;
+  sec.hidden = !visible;
+  // Wipe the rows rather than just hiding them: a hidden element still holds its text in the
+  // DOM, where devtools or a browser extension could read it after the eye is closed.
+  if (!visible) {
+    tbody.innerHTML = '';
+    document.getElementById('tags-count').textContent = '';
+    return;
+  }
+  const entries = Object.entries(tags).sort((a, b) => a[1].localeCompare(b[1]));
+  document.getElementById('tags-count').textContent = entries.length
+    ? `${entries.length} tag${entries.length === 1 ? '' : 's'} in this browser`
+    : 'No tags yet — click the pencil beside any address to add one.';
+  tbody.innerHTML = entries.length
+    ? entries.map(([a, l]) => `<tr>
+        <td>${esc(l)}</td>
+        <td><a class="mono" href="${EXPLORER}/address/${a}" target="_blank" rel="noopener noreferrer">${a}</a></td>
+        <td><button class="mini" type="button" data-tagaddr="${a}">Edit</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="3" class="empty">No tags yet.</td></tr>';
+}
+
+// --- passphrase modal (create on first use, unlock thereafter) ---
+const passModal = document.getElementById('pass-modal');
+const pass1 = document.getElementById('pass-1');
+const pass2 = document.getElementById('pass-2');
+const passErr = document.getElementById('pass-err');
+const passOk = document.getElementById('pass-ok');
+let passCreating = false;
+
+function openPassModal() {
+  passCreating = !hasTagStore();
+  document.getElementById('pass-title').textContent = passCreating ? 'Set a tag passphrase' : 'Unlock wallet tags';
+  document.getElementById('pass-desc').textContent = passCreating
+    ? 'Your tags are encrypted with this passphrase and stored only in this browser. There is no recovery if you lose it, and no copy anywhere else.'
+    : 'Enter your passphrase to decrypt the wallet tags stored in this browser.';
+  passOk.textContent = passCreating ? 'Create' : 'Unlock';
+  pass2.hidden = !passCreating;
+  pass1.value = ''; pass2.value = ''; passErr.textContent = '';
+  passModal.hidden = false;
+  pass1.focus();
+}
+function closePassModal() {
+  passModal.hidden = true;
+  pass1.value = ''; pass2.value = ''; passErr.textContent = ''; // never leave a passphrase in the DOM
+}
+async function submitPass() {
+  const p1 = pass1.value;
+  passErr.textContent = '';
+  passOk.disabled = true;
+  passOk.textContent = passCreating ? 'Encrypting…' : 'Unlocking…';
+  try {
+    if (passCreating) {
+      if (p1.length < 8) throw new Error('Use at least 8 characters.');
+      if (p1 !== pass2.value) throw new Error('Passphrases do not match.');
+      await createTagStore(p1);
+    } else {
+      await unlockTags(p1);
+    }
+    tagsOn = true;
+    closePassModal();
+    syncEyeButton();
+    rerenderAddresses();
+  } catch (e) {
+    // A decrypt failure is indistinguishable from a wrong passphrase, which is the point
+    passErr.textContent = passCreating ? e.message : 'Incorrect passphrase.';
+  } finally {
+    passOk.disabled = false;
+    passOk.textContent = passCreating ? 'Create' : 'Unlock';
+  }
+}
+passOk.addEventListener('click', submitPass);
+document.getElementById('pass-cancel').addEventListener('click', closePassModal);
+for (const el of [pass1, pass2]) {
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitPass(); });
+}
+
+// --- tag editor modal ---
+const tagModal = document.getElementById('tag-modal');
+const tagInput = document.getElementById('tag-input');
+const tagErr = document.getElementById('tag-err');
+let tagEditAddr = null;
+
+function openTagModal(addr) {
+  if (!tagKey || !tagsOn) return;
+  tagEditAddr = String(addr).toLowerCase();
+  document.getElementById('tag-addr').textContent = tagEditAddr;
+  tagInput.value = tags[tagEditAddr] || '';
+  tagErr.textContent = '';
+  document.getElementById('tag-remove').hidden = !tags[tagEditAddr];
+  tagModal.hidden = false;
+  tagInput.focus();
+  tagInput.select();
+}
+function closeTagModal() { tagModal.hidden = true; tagEditAddr = null; tagInput.value = ''; }
+async function saveTagEdit() {
+  if (!tagEditAddr) return;
+  const v = tagInput.value.trim();
+  if (v) tags[tagEditAddr] = v; else delete tags[tagEditAddr];
+  try {
+    await saveTags();
+  } catch (e) {
+    tagErr.textContent = 'Could not save.';
+    return;
+  }
+  closeTagModal();
+  rerenderAddresses();
+}
+document.getElementById('tag-ok').addEventListener('click', saveTagEdit);
+document.getElementById('tag-cancel').addEventListener('click', closeTagModal);
+document.getElementById('tag-remove').addEventListener('click', async () => {
+  if (!tagEditAddr) return;
+  delete tags[tagEditAddr];
+  await saveTags();
+  closeTagModal();
+  rerenderAddresses();
+});
+tagInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveTagEdit(); });
+
+// --- shared wiring ---
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('[data-tagaddr]');
+  if (btn) { e.preventDefault(); openTagModal(btn.getAttribute('data-tagaddr')); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!passModal.hidden) closePassModal();
+  if (!tagModal.hidden) closeTagModal();
+});
+document.getElementById('tag-eye').addEventListener('click', () => {
+  if (!cryptoOK()) return;
+  if (tagsOn) { tagsOn = false; syncEyeButton(); rerenderAddresses(); return; }
+  if (tagKey) { tagsOn = true; syncEyeButton(); rerenderAddresses(); return; }
+  openPassModal();
+});
+document.getElementById('tags-lock').addEventListener('click', lockTags);
+document.getElementById('tags-wipe').addEventListener('click', () => {
+  if (!confirm('Delete all wallet tags from this browser? This cannot be undone.')) return;
+  localStorage.removeItem(TAG_STORE);
+  lockTags();
+});
+
+// WebCrypto needs a secure context, so tagging is unavailable when the file is opened via file://
+if (!cryptoOK()) {
+  const b = document.getElementById('tag-eye');
+  b.disabled = true;
+  b.title = 'Wallet tags need a secure context (https or localhost), so they are unavailable when opening this file directly from disk.';
+}
+syncEyeButton();
 
 // ---------- boot / refresh loop ----------
 let refreshCount = 0;
