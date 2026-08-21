@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-08-20T06:33:19.210Z",
+ "generatedAt": "2026-08-21T06:33:49.505Z",
  "lockers": {
   "lockup": "0x06B6D0AbD9dfC7F04F478B089FD89d4107723264",
   "vesting": "0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C"
@@ -7,6 +7,18 @@
  "groups": {
   "Investors": {
    "plans": [
+    {
+     "planId": "111",
+     "type": "lockup",
+     "recipient": "0xc38145e0Ed7464596FE5F2087b2e56461b021646",
+     "amount": "3332912000000000000000000",
+     "start": 1752667200,
+     "cliff": 1784203200,
+     "rate": "26421486555048198",
+     "period": 1,
+     "txHash": "0x403916bb287008ebe3840635b2f1664e950487c93184be8262e5fb6bbca83256",
+     "createdAt": "2026-08-20T13:31:04.000000Z"
+    },
     {
      "planId": "110",
      "type": "lockup",
