@@ -1,18 +1,18 @@
 {
- "generatedAt": "2026-09-09T10:34:13.731Z",
+ "generatedAt": "2026-09-10T10:23:08.714Z",
  "byReceiver": {
   "subcfcaGG2VXuLoLjuHMCj4aeLPTFBtGUvTahGc6zLrsMSNVo": 44192,
   "sudqZuGgMfWd9DTFRv2odTqzTqUVuvGUqAkXrT1m8MqH9Ppdp": 399999.99999999994,
-  "suc8PxJuhzqcGfjKgU21mc7YkYLGhwMPUF8tQDyVqooDTojkh": 11693.440828343553,
+  "suc8PxJuhzqcGfjKgU21mc7YkYLGhwMPUF8tQDyVqooDTojkh": 11694.940350456593,
   "sucXYcTxVFquB7QETwQxqnMwupEnrSR343YrVkFzygZks1A7n": 119999.99999999999,
-  "suf7A6iSYF3C5Y7XHeieqpySLPBxah8Xzc6uiqhuGUCdehAh3": 41471.73961851841,
-  "sueNb5VCFrG542rRbKyxyehphPBSCzJDp2zz5AiDpnTr9Lamk": 260620.85114571333,
+  "suf7A6iSYF3C5Y7XHeieqpySLPBxah8Xzc6uiqhuGUCdehAh3": 41483.46959651031,
+  "sueNb5VCFrG542rRbKyxyehphPBSCzJDp2zz5AiDpnTr9Lamk": 260627.03911680463,
   "sufsauNryV1w2D6Q6jgaRtZAngJfR5bRYaUV6oKbPfkg4cFi2": 120000
  },
  "totals": {
   "receivers": 32,
   "staking": 7,
-  "stakedAI3": 997978.0315925753,
+  "stakedAI3": 997997.4490637714,
   "xdmToConsensusAI3": 19554322.03517549
  }
 }
