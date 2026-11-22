@@ -1,16 +1,16 @@
 {
- "generatedAt": "2026-11-21T14:00:04.976Z",
+ "generatedAt": "2026-11-22T13:53:56.168Z",
  "byReceiver": {
-  "sudqZuGgMfWd9DTFRv2odTqzTqUVuvGUqAkXrT1m8MqH9Ppdp": 161900.3244490102,
-  "suc8PxJuhzqcGfjKgU21mc7YkYLGhwMPUF8tQDyVqooDTojkh": 11792.922397311726,
+  "sudqZuGgMfWd9DTFRv2odTqzTqUVuvGUqAkXrT1m8MqH9Ppdp": 161947.7728270877,
+  "suc8PxJuhzqcGfjKgU21mc7YkYLGhwMPUF8tQDyVqooDTojkh": 11794.095530041099,
   "sucXYcTxVFquB7QETwQxqnMwupEnrSR343YrVkFzygZks1A7n": 119999.99999999999,
-  "sueNb5VCFrG542rRbKyxyehphPBSCzJDp2zz5AiDpnTr9Lamk": 261078.84735122704,
+  "sueNb5VCFrG542rRbKyxyehphPBSCzJDp2zz5AiDpnTr9Lamk": 261085.07761593995,
   "sufsauNryV1w2D6Q6jgaRtZAngJfR5bRYaUV6oKbPfkg4cFi2": 120000
  },
  "totals": {
   "receivers": 32,
   "staking": 5,
-  "stakedAI3": 674772.0941975489,
+  "stakedAI3": 674826.9459730687,
   "xdmToConsensusAI3": 20504588.83597549
  }
 }
